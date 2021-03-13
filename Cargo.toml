@@ -1,0 +1,25 @@
+[package]
+name = "arduino-uno-template"
+version = "0.0.0"
+authors = ["Gustav Sörnäs <gustav@sornas.net>"]
+edition = "2018"
+
+[dependencies]
+panic-halt = "0.2.0"
+
+[dependencies.arduino-uno]
+git = "https://github.com/rahix/avr-hal"
+rev = "a202778"
+
+# Configure the build for minimal size
+[profile.dev]
+panic = "abort"
+lto = true
+opt-level = "s"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+debug = true
+lto = true
+opt-level = "s"
