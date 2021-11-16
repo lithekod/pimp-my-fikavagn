@@ -1,22 +1,28 @@
+/*!
+ * Blink the builtin LED - the "Hello World" of embedded programming.
+ */
 #![no_std]
 #![no_main]
 
-use arduino_uno::prelude::*;
 use panic_halt as _;
 
-#[arduino_uno::entry]
+#[arduino_hal::entry]
 fn main() -> ! {
-    let dp = arduino_uno::Peripherals::take().unwrap();
+    let dp = arduino_hal::Peripherals::take().unwrap();
+    let pins = arduino_hal::pins!(dp);
 
-    let mut pins = arduino_uno::Pins::new(dp.PORTB, dp.PORTC, dp.PORTD);
-
-    let mut led = pins.d13.into_output(&mut pins.ddr);
-    led.set_low().void_unwrap();
+    // Digital pin 13 is also connected to an onboard LED marked "L"
+    let mut led = pins.d13.into_output();
+    led.set_high();
 
     loop {
-        led.set_high().void_unwrap();
-        arduino_uno::delay_ms(50);
-        led.set_low().void_unwrap();
-        arduino_uno::delay_ms(950);
+        led.toggle();
+        arduino_hal::delay_ms(100);
+        led.toggle();
+        arduino_hal::delay_ms(100);
+        led.toggle();
+        arduino_hal::delay_ms(100);
+        led.toggle();
+        arduino_hal::delay_ms(800);
     }
 }
