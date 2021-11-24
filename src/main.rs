@@ -20,7 +20,7 @@ impl<'b, SPI> UnicornHAT<'b, SPI>
 where SPI: FullDuplex<u8> {
     fn new(ws2812: Ws2812<'b, SPI>) -> Self {
         Self {
-            pixels: [RGB {r: 0, g: 0, b: 0}; 64],
+            pixels: [RGB::default(); 64],
             inner: ws2812,
         }
     }
@@ -32,7 +32,11 @@ where SPI: FullDuplex<u8> {
     fn set_at(&mut self, x: usize, y: usize, c: RGB8) {
         assert!(x < 8);
         assert!(y < 8);
-        self.pixels[y * 8 + x] = c;
+        if y % 2 == 0 {
+            self.pixels[y * 8 + x] = c;
+        } else {
+            self.pixels[(8 - y) * 8 + x] = c;
+        }
     }
 
     fn set_all(&mut self, c: RGB8) {
@@ -45,6 +49,12 @@ fn main() -> ! {
     let dp = arduino_hal::Peripherals::take().unwrap();
     let pins = arduino_hal::pins!(dp);
     let mut adc = arduino_hal::Adc::new(dp.ADC, Default::default());
+
+    let mut a0 = pins.a0.into_analog_input(&mut adc);
+    let mut a1 = pins.a1.into_analog_input(&mut adc);
+    let mut a2 = pins.a2.into_analog_input(&mut adc);
+
+    let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
     let mut buffer = [0; 1024];
 
@@ -67,15 +77,38 @@ fn main() -> ! {
 
     let mut i: u8 = 0;
 
+    let mut x: u8 = 4;
+    let mut y: u8 = 4;
+    let mut moving = false;
+
     loop {
-        for y in 0..8 {
-            for x in 0..8 {
-                let offset = y * 32 + x * 4;
-                unicorn.set_at(x, y, hsv2rgb(Hsv { hue: i.overflowing_add(offset as u8).0, sat: 255, val: 16 }));
-            }
+        let dx = a1.analog_read(&mut adc);
+        let dy = a2.analog_read(&mut adc);
+
+        if dx == 1023 && !moving {
+            x  = x.wrapping_sub(1);
+            moving = true;
+        } else if dx == 0 && !moving {
+            x = x.wrapping_add(1);
+            moving = true;
+        } else if dy == 1023 && !moving {
+            y = y.wrapping_add(1);
+            moving = true;
+        } else if dy == 0 && !moving {
+            y  = y.wrapping_sub(1);
+            moving = true;
         }
-        unicorn.send().unwrap();
-        i = i.overflowing_add(1).0;
-        arduino_hal::delay_ms(1);
+
+        if dx != 0 && dx != 1023 && dy != 0 && dy != 1023 {
+            moving = false;
+        }
+
+        if x < 8 && y < 8 {
+            unicorn.set_all(RGB::default());
+            unicorn.set_at(x as usize, y as usize, RGB { r: 32, g: 0, b: 0});
+            unicorn.send();
+        }
+
+        arduino_hal::delay_ms(50);
     }
 }
