@@ -35,7 +35,7 @@ where SPI: FullDuplex<u8> {
         if y % 2 == 0 {
             self.pixels[y * 8 + x] = c;
         } else {
-            self.pixels[(8 - y) * 8 + x] = c;
+            self.pixels[y * 8 + (7 - x)] = c;
         }
     }
 
@@ -85,19 +85,21 @@ fn main() -> ! {
         let dx = a1.analog_read(&mut adc);
         let dy = a2.analog_read(&mut adc);
 
-        if dx == 1023 && !moving {
-            x  = x.wrapping_sub(1);
+        if dx > 1023-100 && !moving {
+            x  = x.wrapping_add(1);
             moving = true;
-        } else if dx == 0 && !moving {
-            x = x.wrapping_add(1);
+        } else if dx < 100 && !moving {
+            x = x.wrapping_sub(1);
             moving = true;
-        } else if dy == 1023 && !moving {
+        } else if dy > 1023-100 && !moving {
             y = y.wrapping_add(1);
             moving = true;
-        } else if dy == 0 && !moving {
+        } else if dy < 100 && !moving {
             y  = y.wrapping_sub(1);
             moving = true;
         }
+
+        ufmt::uwriteln!(serial, "x: {}, y: {}, dx: {}, dy: {}\r", x, y, dx, dy);
 
         if dx != 0 && dx != 1023 && dy != 0 && dy != 1023 {
             moving = false;
@@ -109,6 +111,6 @@ fn main() -> ! {
             unicorn.send();
         }
 
-        arduino_hal::delay_ms(50);
+        arduino_hal::delay_ms(100);
     }
 }
