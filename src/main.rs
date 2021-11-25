@@ -7,7 +7,7 @@
 use ws2812_spi::prerendered::Ws2812;
 
 use embedded_hal::spi::FullDuplex;
-use smart_leds::{RGB, RGB8, SmartLedsWrite};
+use smart_leds::{SmartLedsWrite, RGB, RGB8};
 
 use panic_halt as _;
 
@@ -17,7 +17,9 @@ struct UnicornHAT<'b, SPI> {
 }
 
 impl<'b, SPI> UnicornHAT<'b, SPI>
-where SPI: FullDuplex<u8> {
+where
+    SPI: FullDuplex<u8>,
+{
     fn new(ws2812: Ws2812<'b, SPI>) -> Self {
         Self {
             pixels: [RGB::default(); 64],
@@ -83,17 +85,17 @@ fn main() -> ! {
         let dx = a1.analog_read(&mut adc);
         let dy = a2.analog_read(&mut adc);
 
-        if dx > 1023-100 && !moving {
-            x  = x.wrapping_add(1);
+        if dx > 1023 - 100 && !moving {
+            x = x.wrapping_add(1);
             moving = true;
         } else if dx < 100 && !moving {
             x = x.wrapping_sub(1);
             moving = true;
-        } else if dy > 1023-100 && !moving {
+        } else if dy > 1023 - 100 && !moving {
             y = y.wrapping_add(1);
             moving = true;
         } else if dy < 100 && !moving {
-            y  = y.wrapping_sub(1);
+            y = y.wrapping_sub(1);
             moving = true;
         }
 
@@ -105,7 +107,7 @@ fn main() -> ! {
 
         if x < 8 && y < 8 {
             unicorn.set_all(RGB::default());
-            unicorn.set_at(x as usize, y as usize, RGB { r: 32, g: 0, b: 0});
+            unicorn.set_at(x as usize, y as usize, RGB { r: 32, g: 0, b: 0 });
             unicorn.send().unwrap();
         }
 
