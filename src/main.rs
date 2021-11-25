@@ -7,7 +7,7 @@
 use ws2812_spi::prerendered::Ws2812;
 
 use embedded_hal::spi::FullDuplex;
-use smart_leds::{RGB, RGB8, SmartLedsWrite, hsv::{hsv2rgb, Hsv}};
+use smart_leds::{RGB, RGB8, SmartLedsWrite};
 
 use panic_halt as _;
 
@@ -50,9 +50,9 @@ fn main() -> ! {
     let pins = arduino_hal::pins!(dp);
     let mut adc = arduino_hal::Adc::new(dp.ADC, Default::default());
 
-    let mut a0 = pins.a0.into_analog_input(&mut adc);
-    let mut a1 = pins.a1.into_analog_input(&mut adc);
-    let mut a2 = pins.a2.into_analog_input(&mut adc);
+    let _a0 = pins.a0.into_analog_input(&mut adc);
+    let a1 = pins.a1.into_analog_input(&mut adc);
+    let a2 = pins.a2.into_analog_input(&mut adc);
 
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
@@ -74,8 +74,6 @@ fn main() -> ! {
 
     let ws2812 = Ws2812::new(spi, &mut buffer);
     let mut unicorn = UnicornHAT::new(ws2812);
-
-    let mut i: u8 = 0;
 
     let mut x: u8 = 4;
     let mut y: u8 = 4;
@@ -99,7 +97,7 @@ fn main() -> ! {
             moving = true;
         }
 
-        ufmt::uwriteln!(serial, "x: {}, y: {}, dx: {}, dy: {}\r", x, y, dx, dy);
+        ufmt::uwriteln!(serial, "x: {}, y: {}, dx: {}, dy: {}\r", x, y, dx, dy).unwrap();
 
         if dx != 0 && dx != 1023 && dy != 0 && dy != 1023 {
             moving = false;
@@ -108,7 +106,7 @@ fn main() -> ! {
         if x < 8 && y < 8 {
             unicorn.set_all(RGB::default());
             unicorn.set_at(x as usize, y as usize, RGB { r: 32, g: 0, b: 0});
-            unicorn.send();
+            unicorn.send().unwrap();
         }
 
         arduino_hal::delay_ms(100);
